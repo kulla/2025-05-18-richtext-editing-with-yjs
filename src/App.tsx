@@ -2,6 +2,7 @@ import * as Y from 'yjs'
 import './App.css'
 import { equals } from 'ramda'
 import { useRef, useSyncExternalStore } from 'react'
+import clsx from 'clsx'
 
 const ydoc = new Y.Doc()
 const ytext = ydoc.getText('richtext')
@@ -38,12 +39,55 @@ export default function App() {
 
   return (
     <main className="prose p-10">
-      <h1>Rsbuild with React</h1>
-      <p>Start building amazing things with Rsbuild.</p>
+      <h1>Richtext element</h1>
+      {renderContentEditable()}
       <h1>Internal State</h1>
       <pre>{JSON.stringify(text, null, 2)}</pre>
     </main>
   )
+
+  function renderContentEditable() {
+    return (
+      <p contentEditable suppressContentEditableWarning spellCheck="false">
+        {renderText()}
+      </p>
+    )
+  }
+
+  function renderText() {
+    const spans = []
+    let position = 0
+
+    for (const insert of text) {
+      const classNames = clsx(
+        insert.attributes?.bold && 'font-bold',
+        insert.attributes?.italic && 'italic',
+        'white-space-pre-wrap',
+      )
+
+      if (typeof insert.insert === 'string') {
+        spans.push(
+          <span key={position} className={classNames} data-position={position}>
+            {insert.insert}
+          </span>,
+        )
+        position += insert.insert.length
+      } else {
+        spans.push(
+          <span
+            key={position}
+            data-position={position}
+            className={clsx(classNames, 'text-blue-500 underline')}
+          >
+            {insert.insert.content}
+          </span>,
+        )
+        position += 1
+      }
+    }
+
+    return spans
+  }
 }
 
 type RichText = Insert[]
