@@ -87,7 +87,8 @@ export default function App() {
     const spans = []
     let position = 0
 
-    for (const insert of text) {
+    for (let index = 0; index < text.length; index++) {
+      const insert = text[index]
       const classNames = clsx(
         insert.attributes?.bold && 'font-bold',
         insert.attributes?.italic && 'italic',
@@ -98,6 +99,7 @@ export default function App() {
           <span
             key={position}
             className={classNames}
+            data-id={index}
             data-position={position}
             data-type="text"
           >
@@ -110,6 +112,7 @@ export default function App() {
           <span
             key={position}
             data-type="link"
+            data-id={index}
             data-position={position}
             className={clsx(classNames, 'text-blue-500 underline')}
           >
@@ -149,18 +152,18 @@ function getPosition(
   if (node.parentElement == null) return null
   if (node.parentElement?.parentElement?.id !== 'richtext') return null
 
-  const { type, position: positionText } = node.parentElement.dataset
+  const { type, position, id } = node.parentElement.dataset
 
   if (type !== 'text' && type !== 'link') return null
-  if (positionText == null) return null
+  if (position == null || id == null) return null
 
-  const position = Number.parseInt(positionText, 10)
+  const positionNr = Number.parseInt(position, 10)
 
-  if (Number.isNaN(position)) return null
+  if (Number.isNaN(positionNr)) return null
 
-  const index = type === 'text' ? position + offset : position + 1
+  const index = type === 'text' ? positionNr + offset : positionNr + 1
 
-  return { type, index, position, offset }
+  return { type, index, id, offset }
 }
 
 type RichText = Insert[]
@@ -185,6 +188,6 @@ interface Cursor {
 interface Position {
   type: 'text' | 'link'
   index: number
-  position: number
+  id: string
   offset: number
 }
