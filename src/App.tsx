@@ -7,6 +7,7 @@ import {
   useState,
   useCallback,
   useEffect,
+  useLayoutEffect,
 } from 'react'
 import clsx from 'clsx'
 
@@ -59,6 +60,22 @@ export default function App() {
       document.removeEventListener('selectionchange', handleSelectionChange)
     }
   }, [handleSelectionChange])
+
+  useLayoutEffect(() => {
+    const selection = window.getSelection()
+
+    if (selection == null) return
+    if (equals(getCursor(selection), cursor) && selection.rangeCount === 1)
+      return
+
+    selection.removeAllRanges()
+
+    const range = getRange(cursor)
+
+    if (range == null) return
+
+    selection.addRange(range)
+  }, [cursor])
 
   return (
     <main className="prose p-10">
@@ -125,6 +142,35 @@ export default function App() {
 
     return spans
   }
+}
+
+function getRange(cursor: Cursor | null): Range | null {
+  if (cursor == null) return null
+
+  const { start, end } = cursor
+  const startPosition = getDomPosition(start)
+  const endPosition = getDomPosition(end)
+
+  if (startPosition == null || endPosition == null) return null
+
+  const range = document.createRange()
+  range.setStart(startPosition.node, startPosition.offset)
+  range.setEnd(endPosition.node, endPosition.offset)
+
+  return range
+}
+
+function getDomPosition(
+  position: Position,
+): { node: Node; offset: number } | null {
+  const { id, offset } = position
+  const node = document.querySelector(
+    `#richtext > span[data-id="${id}"]`,
+  )?.firstChild
+
+  if (node == null) return null
+
+  return { node, offset }
 }
 
 function getCursor(selection: Selection | null): Cursor | null {
