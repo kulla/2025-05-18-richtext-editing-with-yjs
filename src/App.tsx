@@ -1,7 +1,13 @@
 import * as Y from 'yjs'
 import './App.css'
 import { equals } from 'ramda'
-import { useRef, useSyncExternalStore } from 'react'
+import {
+  useRef,
+  useSyncExternalStore,
+  useState,
+  useCallback,
+  useEffect,
+} from 'react'
 import clsx from 'clsx'
 
 const ydoc = new Y.Doc()
@@ -36,19 +42,37 @@ export default function App() {
       return text
     },
   )
+  const [cursor, setCursor] = useState<Cursor | null>(null)
+
+  const handleSelectionChange = useCallback(() => {
+    const selection = window.getSelection()
+    const newCursor = getCursor(selection)
+
+    if (!equals(cursor, newCursor)) {
+      setCursor(newCursor)
+    }
+  }, [cursor])
+
+  useEffect(() => {
+    document.addEventListener('selectionchange', handleSelectionChange)
+    return () => {
+      document.removeEventListener('selectionchange', handleSelectionChange)
+    }
+  }, [handleSelectionChange])
 
   return (
     <main className="prose p-10">
       <h1>Richtext element</h1>
       {renderContentEditable()}
       <h1>Internal State</h1>
-      <pre>{JSON.stringify(text, null, 2)}</pre>
+      <pre>{JSON.stringify({ cursor, text }, null, 2)}</pre>
     </main>
   )
 
   function renderContentEditable() {
     return (
       <p
+        id="richtext"
         contentEditable
         suppressContentEditableWarning
         spellCheck="false"
@@ -71,7 +95,12 @@ export default function App() {
 
       if (typeof insert.insert === 'string') {
         spans.push(
-          <span key={position} className={classNames} data-position={position}>
+          <span
+            key={position}
+            className={classNames}
+            data-position={position}
+            data-type="text"
+          >
             {insert.insert}
           </span>,
         )
@@ -80,6 +109,7 @@ export default function App() {
         spans.push(
           <span
             key={position}
+            data-type="link"
             data-position={position}
             className={clsx(classNames, 'text-blue-500 underline')}
           >
@@ -94,6 +124,45 @@ export default function App() {
   }
 }
 
+function getCursor(selection: Selection | null): Cursor | null {
+  if (selection == null) return null
+
+  const { anchorNode, focusNode, anchorOffset, focusOffset } = selection
+  const anchorPosition = getPosition(anchorNode, anchorOffset)
+  const focusPosition = getPosition(focusNode, focusOffset)
+
+  if (anchorPosition == null || focusPosition == null) return null
+
+  const isCollapsed = equals(anchorPosition, focusPosition)
+
+  return anchorPosition.index < focusPosition.index
+    ? { start: anchorPosition, end: focusPosition, isCollapsed }
+    : { start: focusPosition, end: anchorPosition, isCollapsed }
+}
+
+function getPosition(
+  node: Node | null,
+  offset: number | null,
+): Position | null {
+  if (node == null || offset == null) return null
+  if (node.nodeType !== Node.TEXT_NODE) return null
+  if (node.parentElement == null) return null
+  if (node.parentElement?.parentElement?.id !== 'richtext') return null
+
+  const { type, position: positionText } = node.parentElement.dataset
+
+  if (type !== 'text' && type !== 'link') return null
+  if (positionText == null) return null
+
+  const position = Number.parseInt(positionText, 10)
+
+  if (Number.isNaN(position)) return null
+
+  const index = type === 'text' ? position + offset : position + 1
+
+  return { type, index, position, offset }
+}
+
 type RichText = Insert[]
 
 interface Insert {
@@ -105,4 +174,17 @@ interface LinkEmbed {
   type: 'link'
   href: string
   content: string
+}
+
+interface Cursor {
+  start: Position
+  end: Position
+  isCollapsed: boolean
+}
+
+interface Position {
+  type: 'text' | 'link'
+  index: number
+  position: number
+  offset: number
 }
