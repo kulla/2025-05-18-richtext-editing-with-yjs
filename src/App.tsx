@@ -48,7 +48,12 @@ export default function App() {
 
   function renderContentEditable() {
     return (
-      <p contentEditable suppressContentEditableWarning spellCheck="false">
+      <p
+        contentEditable
+        suppressContentEditableWarning
+        spellCheck="false"
+        className="white-space-pre-wrap"
+      >
         {renderText()}
       </p>
     )
@@ -62,7 +67,6 @@ export default function App() {
       const classNames = clsx(
         insert.attributes?.bold && 'font-bold',
         insert.attributes?.italic && 'italic',
-        'white-space-pre-wrap',
       )
 
       if (typeof insert.insert === 'string') {
