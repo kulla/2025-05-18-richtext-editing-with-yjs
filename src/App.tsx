@@ -8,6 +8,7 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
+  type KeyboardEventHandler,
 } from 'react'
 import clsx from 'clsx'
 
@@ -54,6 +55,36 @@ export default function App() {
     }
   }, [cursor])
 
+  const handleKeyDown: KeyboardEventHandler = useCallback(
+    (event) => {
+      if (cursor == null) return
+
+      const { start, end } = cursor
+
+      event.preventDefault()
+
+      if (event.key === 'Backspace') return
+      if (event.key === 'Delete') return
+      if (!event.ctrlKey && !event.metaKey && !event.altKey) {
+        if (cursor.isCollapsed) {
+          if (start.type === 'text') {
+            ytext.insert(start.index, event.key)
+            setCursor({
+              start: {
+                ...start,
+                index: start.index + 1,
+                offset: start.offset + 1,
+              },
+              end: { ...end, index: end.index + 1, offset: end.offset + 1 },
+              isCollapsed: true,
+            })
+          }
+        }
+      }
+    },
+    [cursor],
+  )
+
   useEffect(() => {
     document.addEventListener('selectionchange', handleSelectionChange)
     return () => {
@@ -94,6 +125,7 @@ export default function App() {
         suppressContentEditableWarning
         spellCheck="false"
         className="white-space-pre-wrap"
+        onKeyDown={handleKeyDown}
       >
         {renderText()}
       </p>
