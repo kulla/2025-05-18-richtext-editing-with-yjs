@@ -69,7 +69,12 @@ export default function App() {
 
       if (event.key === 'Backspace') return
       if (event.key === 'Delete') return
-      if (!event.ctrlKey && !event.metaKey && !event.altKey) {
+      if (
+        !event.ctrlKey &&
+        !event.metaKey &&
+        !event.altKey &&
+        event.key.length === 1
+      ) {
         if (cursor.isCollapsed) {
           if (start.type === 'text') {
             ytext.insert(start.index, event.key)
