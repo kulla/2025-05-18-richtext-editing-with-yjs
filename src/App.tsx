@@ -58,6 +58,7 @@ export default function App() {
   const handleKeyDown: KeyboardEventHandler = useCallback(
     (event) => {
       if (cursor == null) return
+      if (event.key.startsWith('Arrow')) return
 
       const { start, end } = cursor
 
