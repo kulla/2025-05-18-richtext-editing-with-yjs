@@ -4,7 +4,6 @@ import { equals } from 'ramda'
 import {
   useRef,
   useSyncExternalStore,
-  useState,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -13,6 +12,7 @@ import {
 import clsx from 'clsx'
 
 const ydoc = new Y.Doc()
+const ystate = ydoc.getMap('state')
 const ytext = ydoc.getText('richtext')
 
 ytext.insert(0, 'Hello World! ')
@@ -24,34 +24,37 @@ ytext.insertEmbed(ytext.length, {
 })
 
 export default function App() {
-  const prevText = useRef<RichText>(null)
-  const text = useSyncExternalStore(
+  const prevState = useRef<{ text: RichText; cursor: Cursor | null }>(null)
+  const { text, cursor } = useSyncExternalStore(
     (callback) => {
       ytext.observe(callback)
+      ystate.observe(callback)
 
       return () => {
         ytext.unobserve(callback)
+        ystate.unobserve(callback)
       }
     },
     () => {
       const text = ytext.toDelta() as RichText
+      const cursor = ystate.get('cursor') as Cursor | null
+      const state = { text, cursor }
 
-      if (prevText.current && equals(prevText.current, text)) {
-        return prevText.current
+      if (prevState.current && equals(prevState.current, state)) {
+        return prevState.current
       }
 
-      prevText.current = text
-      return text
+      prevState.current = state
+      return state
     },
   )
-  const [cursor, setCursor] = useState<Cursor | null>(null)
 
   const handleSelectionChange = useCallback(() => {
     const selection = window.getSelection()
     const newCursor = getCursor(selection)
 
     if (!equals(cursor, newCursor)) {
-      setCursor(newCursor)
+      ystate.set('cursor', newCursor)
     }
   }, [cursor])
 
@@ -70,7 +73,7 @@ export default function App() {
         if (cursor.isCollapsed) {
           if (start.type === 'text') {
             ytext.insert(start.index, event.key)
-            setCursor({
+            ystate.set('cursor', {
               start: {
                 ...start,
                 index: start.index + 1,
