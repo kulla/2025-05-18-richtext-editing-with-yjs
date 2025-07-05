@@ -62,6 +62,7 @@ export default function App() {
     (event) => {
       if (cursor == null) return
       if (event.key.startsWith('Arrow')) return
+      if (event.ctrlKey && event.key === 'r') return
 
       const { start, end } = cursor
 
