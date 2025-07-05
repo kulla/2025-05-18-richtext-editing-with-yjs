@@ -64,18 +64,15 @@ export default function App() {
       if (event.key.startsWith('Arrow')) return
       if (event.ctrlKey && event.key === 'r') return
 
-      const { start, end, isCollapsed } = cursor
+      const { start, end } = cursor
+      const isCollapsed = equals(start, end)
 
       event.preventDefault()
 
       if (event.key === 'Backspace' || event.key === 'Delete') {
         if (!isCollapsed) {
           ytext.delete(start.index, end.index - start.index)
-          ystate.set('cursor', {
-            start,
-            end: start,
-            isCollapsed: true,
-          })
+          ystate.set('cursor', { start, end: start })
         }
       } else if (
         !event.ctrlKey &&
@@ -83,7 +80,7 @@ export default function App() {
         !event.altKey &&
         event.key.length === 1
       ) {
-        if (cursor.isCollapsed) {
+        if (isCollapsed) {
           if (start.type === 'text') {
             ytext.insert(start.index, event.key)
             ystate.set('cursor', {
@@ -93,7 +90,6 @@ export default function App() {
                 offset: start.offset + 1,
               },
               end: { ...end, index: end.index + 1, offset: end.offset + 1 },
-              isCollapsed: true,
             })
           }
         }
@@ -129,7 +125,6 @@ export default function App() {
     ystate.set('cursor', {
       start: { type: 'text', index: 0, id: '0', offset: 0 },
       end: { type: 'text', index: 0, id: '0', offset: 0 },
-      isCollapsed: true,
     })
   }, [])
 
@@ -239,11 +234,9 @@ function getCursor(selection: Selection | null): Cursor | null {
 
   if (anchorPosition == null || focusPosition == null) return null
 
-  const isCollapsed = equals(anchorPosition, focusPosition)
-
   return anchorPosition.index < focusPosition.index
-    ? { start: anchorPosition, end: focusPosition, isCollapsed }
-    : { start: focusPosition, end: anchorPosition, isCollapsed }
+    ? { start: anchorPosition, end: focusPosition }
+    : { start: focusPosition, end: anchorPosition }
 }
 
 function getPosition(
@@ -285,7 +278,6 @@ interface LinkEmbed {
 interface Cursor {
   start: Position
   end: Position
-  isCollapsed: boolean
 }
 
 interface Position {
