@@ -118,6 +118,14 @@ export default function App() {
     selection.addRange(range)
   }, [cursor])
 
+  useEffect(() => {
+    ystate.set('cursor', {
+      start: { type: 'text', index: 0, id: '0', offset: 0 },
+      end: { type: 'text', index: 0, id: '0', offset: 0 },
+      isCollapsed: true,
+    })
+  }, [])
+
   return (
     <main className="prose p-10">
       <h1>Richtext element</h1>
