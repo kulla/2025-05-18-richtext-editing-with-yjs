@@ -1,5 +1,7 @@
 # Richtext editing with Yjs
 
+Experimental project to explore richtext editing with the [Yjs text type](https://docs.yjs.dev/api/shared-types/y.text).
+
 ## Setup
 
 1. Clone the repository
