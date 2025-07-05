@@ -27,6 +27,10 @@ Preview the production build locally:
 bun preview
 ```
 
+## Known errors
+
+* When entering characters and using the arrow keys at the same time sometimes an error `Index or size is negative or greater than the allowed amount` is thrown which crashes the error => I guess the arrow keys need to be handled by the editor and not by the browser.
+
 ## Maintenance
 
 Update dependencies:
