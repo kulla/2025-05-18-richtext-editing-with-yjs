@@ -64,13 +64,20 @@ export default function App() {
       if (event.key.startsWith('Arrow')) return
       if (event.ctrlKey && event.key === 'r') return
 
-      const { start, end } = cursor
+      const { start, end, isCollapsed } = cursor
 
       event.preventDefault()
 
-      if (event.key === 'Backspace') return
-      if (event.key === 'Delete') return
-      if (
+      if (event.key === 'Backspace' || event.key === 'Delete') {
+        if (!isCollapsed) {
+          ytext.delete(start.index, end.index - start.index)
+          ystate.set('cursor', {
+            start,
+            end: start,
+            isCollapsed: true,
+          })
+        }
+      } else if (
         !event.ctrlKey &&
         !event.metaKey &&
         !event.altKey &&
