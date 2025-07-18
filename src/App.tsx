@@ -66,12 +66,13 @@ export default function App() {
 
       const { start, end } = cursor
       const isCollapsed = equals(start, end)
+      const startType = getTypeFromInsert(text[start.stateIndex])
 
       event.preventDefault()
 
       if (event.key === 'Backspace' || event.key === 'Delete') {
         if (!isCollapsed) {
-          ytext.delete(start.index, end.index - start.index)
+          ytext.delete(start.yjsIndex, end.yjsIndex - start.yjsIndex)
           ystate.set('cursor', { start, end: start })
         }
       } else if (
@@ -81,21 +82,21 @@ export default function App() {
         event.key.length === 1
       ) {
         if (isCollapsed) {
-          if (start.type === 'text') {
-            ytext.insert(start.index, event.key)
+          if (startType === 'text') {
+            ytext.insert(start.yjsIndex, event.key)
             ystate.set('cursor', {
               start: {
                 ...start,
-                index: start.index + 1,
+                index: start.yjsIndex + 1,
                 offset: start.offset + 1,
               },
-              end: { ...end, index: end.index + 1, offset: end.offset + 1 },
+              end: { ...end, index: end.yjsIndex + 1, offset: end.offset + 1 },
             })
           }
         }
       }
     },
-    [cursor],
+    [cursor, text],
   )
 
   useEffect(() => {
@@ -215,9 +216,9 @@ function getRange(cursor: Cursor | null): Range | null {
 function getDomPosition(
   position: Position,
 ): { node: Node; offset: number } | null {
-  const { id, offset } = position
+  const { stateIndex, offset } = position
   const node = document.querySelector(
-    `#richtext > span[data-id="${id}"]`,
+    `#richtext > span[data-id="${stateIndex}"]`,
   )?.firstChild
 
   if (node == null) return null
@@ -234,7 +235,7 @@ function getCursor(selection: Selection | null): Cursor | null {
 
   if (anchorPosition == null || focusPosition == null) return null
 
-  return anchorPosition.index < focusPosition.index
+  return anchorPosition.yjsIndex < focusPosition.yjsIndex
     ? { start: anchorPosition, end: focusPosition }
     : { start: focusPosition, end: anchorPosition }
 }
@@ -249,17 +250,22 @@ function getPosition(
   if (node.parentElement?.parentElement?.id !== 'richtext') return null
 
   const { type, position, id } = node.parentElement.dataset
+  const stateIndex = Number.parseInt(id ?? '', 10)
 
   if (type !== 'text' && type !== 'link') return null
   if (position == null || id == null) return null
 
   const positionNr = Number.parseInt(position, 10)
 
-  if (Number.isNaN(positionNr)) return null
+  if (Number.isNaN(positionNr) || Number.isNaN(stateIndex)) return null
 
   const index = type === 'text' ? positionNr + offset : positionNr + 1
 
-  return { type, index, id, offset }
+  return { yjsIndex: index, stateIndex, offset }
+}
+
+function getTypeFromInsert(insert: Insert): 'text' | 'link' {
+  return typeof insert.insert === 'string' ? 'text' : 'link'
 }
 
 type RichText = Insert[]
@@ -281,8 +287,7 @@ interface Cursor {
 }
 
 interface Position {
-  type: 'text' | 'link'
-  index: number
-  id: string
+  yjsIndex: number
+  stateIndex: number
   offset: number
 }
